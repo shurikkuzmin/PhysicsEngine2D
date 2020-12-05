@@ -14,7 +14,7 @@ pygame.init()
 WINDOWHEIGHT=600
 WINDOWWIDTH=800
 SPEED = 60
-GRAVITY = 50.0
+GRAVITY = 0.0 #50.0
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
@@ -52,13 +52,15 @@ class Box:
         pygame.draw.rect(SURFACE, WHITE, self.rect)
 
 class Circle:
-    def __init__(self, centerX, centerY, radius):
+    def __init__(self, centerX, centerY, radius, mass, k, velX, velY):
         self.rect = pygame.Rect(centerX - radius, centerY - radius, 2*radius, 2*radius)
-        self.velX = float(random.randint(-20, 20))
-        self.velY = float(random.randint(-20, 20))
+        self.velX = velX #float(random.randint(-20, 20))
+        self.velY = velY #float(random.randint(-20, 20))
         self.centerX = self.rect.centerx
         self.centerY = self.rect.centery
         self.radius = radius
+        self.mass = mass
+        self.k = k 
         self.isActive = True
 
     def update(self):
@@ -81,7 +83,9 @@ class Circle:
         pygame.draw.circle(SURFACE, WHITE, (self.rect.centerx,self.rect.centery), self.radius)       
 
 #boxes = []
-circles = []
+circle1 = Circle(WINDOWWIDTH/2-100, WINDOWHEIGHT/2, 30, 1.0, 1.0, 30.0, 0.0)
+circle2 = Circle(WINDOWWIDTH/2+100, WINDOWHEIGHT/2, 30, 1.0, 1.0, -30.0, 0.0)
+circles = [circle1, circle2]
 while True:
 
     SURFACE.fill(BLACK)
@@ -89,13 +93,18 @@ while True:
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
-        if event.type == MOUSEBUTTONUP:
-            pos = pygame.mouse.get_pos()
-            #boxes.append(Box(pos[0], pos[1], 30, 30))
-            circles.append(Circle(pos[0], pos[1], 30))
+        #if event.type == MOUSEBUTTONUP:
+        #    pos = pygame.mouse.get_pos()
+        #    #boxes.append(Box(pos[0], pos[1], 30, 30))
+        #    circles.append(Circle(pos[0], pos[1], 30))
     
     #for box in boxes:
     #    box.update()
+    for i in range(0, len(circles)):
+        for j in range(i + 1, len(circles)):
+            print("Proverka")
+            #circles[i] collision with circles[j] 
+        
     for circle in circles:
         circle.update()
             
