@@ -82,8 +82,38 @@ class Circle:
             self.isActive = False
         pygame.draw.circle(SURFACE, WHITE, (self.rect.centerx,self.rect.centery), self.radius)       
 
+def collision(i, j, circles):
+    dist = numpy.sqrt((circles[i].centerX - circles[j].centerX)**2 + (circles[i].centerY - circles[j].centerY)**2)
+    if dist < circles[i].radius + circles[j].radius:
+        x1 = circles[i].centerX
+        y1 = circles[i].centerY
+        x2 = circles[j].centerX
+        y2 = circles[j].centerY
+        velX1 = circles[i].velX
+        velY1 = circles[i].velY
+        velX2 = circles[j].velX
+        velY2 = circles[j].velY
+        m1 = circles[i].mass
+        m2 = circles[j].mass        
+        normX = (x1 - x2) / dist
+        normY = (y1 - y2) / dist
+        dotProduct = (velX1 - velX2) * normX + (velY1 - velY2) * normY
+        if dotProduct < 0.0:
+            k = min(circles[i].k, circles[j].k)
+            impulse = - m1 * m2/(m1 + m2) * (1.0 + k) * dotProduct
+            circles[i].velX += impulse * normX / m1
+            circles[i].velY += impulse * normY / m1
+            circles[j].velX -= impulse * normX / m2
+            circles[j].velY -= impulse * normY / m2
+            print("norm", normX, normY)
+            print("OldVel", velX1, velY1)
+            print("NewVel", circles[i].velX, circles[j].velY)
+            
+        
+        print("Collision is going")
+
 #boxes = []
-circle1 = Circle(WINDOWWIDTH/2-100, WINDOWHEIGHT/2, 30, 1.0, 1.0, 30.0, 0.0)
+circle1 = Circle(WINDOWWIDTH/2-100, WINDOWHEIGHT/2 - 10, 30, 10.0, 1.0, 30.0, 0.0)
 circle2 = Circle(WINDOWWIDTH/2+100, WINDOWHEIGHT/2, 30, 1.0, 1.0, -30.0, 0.0)
 circles = [circle1, circle2]
 while True:
@@ -102,7 +132,7 @@ while True:
     #    box.update()
     for i in range(0, len(circles)):
         for j in range(i + 1, len(circles)):
-            print("Proverka")
+            collision(i, j, circles)
             #circles[i] collision with circles[j] 
         
     for circle in circles:
