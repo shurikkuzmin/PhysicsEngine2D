@@ -14,7 +14,7 @@ pygame.init()
 WINDOWHEIGHT=600
 WINDOWWIDTH=800
 SPEED = 60
-GRAVITY = 0.0 #50.0
+GRAVITY = 20.0
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
@@ -33,10 +33,10 @@ class Box:
         self.isActive = True
 
     def update(self):
-        if not self.isActive:
-            pygame.draw.rect(SURFACE, WHITE, self.rect)
-            return
-        
+        #if not self.isActive:
+        #    pygame.draw.rect(SURFACE, WHITE, self.rect)
+        #    return
+
         self.velY = self.velY + GRAVITY * 1.0 / SPEED
         self.velX = self.velX
         self.centerX = self.centerX + self.velX / SPEED
@@ -44,11 +44,11 @@ class Box:
         
         self.rect.centery = int(self.centerY)
         self.rect.centerx = int(self.centerX)
-        if self.rect.bottom >= WINDOWHEIGHT:
-            self.rect.bottom = WINDOWHEIGHT - 1
-            self.centerX = self.rect.centerx
-            self.centerY = self.rect.centery
-            self.isActive = False
+        #if self.rect.bottom >= WINDOWHEIGHT:
+        #    self.rect.bottom = WINDOWHEIGHT - 1
+        #    self.centerX = self.rect.centerx
+        #    self.centerY = self.rect.centery
+        #    #self.isActive = False
         pygame.draw.rect(SURFACE, WHITE, self.rect)
 
 class Circle:
@@ -64,9 +64,6 @@ class Circle:
         self.isActive = True
 
     def update(self):
-        if not self.isActive:
-            pygame.draw.circle(SURFACE, WHITE, (self.rect.centerx,self.rect.centery), self.radius)
-            return
         
         self.velY = self.velY + GRAVITY * 1.0 / SPEED
         self.velX = self.velX
@@ -75,14 +72,9 @@ class Circle:
         
         self.rect.centery = int(self.centerY)
         self.rect.centerx = int(self.centerX)
-        if self.rect.bottom >= WINDOWHEIGHT:
-            self.rect.bottom = WINDOWHEIGHT - 1
-            self.centerX = self.rect.centerx
-            self.centerY = self.rect.centery
-            self.isActive = False
         pygame.draw.circle(SURFACE, WHITE, (self.rect.centerx,self.rect.centery), self.radius)       
 
-def collision(i, j, circles):
+def collisionCircles(i, j, circles):
     dist = numpy.sqrt((circles[i].centerX - circles[j].centerX)**2 + (circles[i].centerY - circles[j].centerY)**2)
     if dist < circles[i].radius + circles[j].radius:
         x1 = circles[i].centerX
@@ -105,17 +97,14 @@ def collision(i, j, circles):
             circles[i].velY += impulse * normY / m1
             circles[j].velX -= impulse * normX / m2
             circles[j].velY -= impulse * normY / m2
-            print("norm", normX, normY)
-            print("OldVel", velX1, velY1)
-            print("NewVel", circles[i].velX, circles[j].velY)
-            
-        
-        print("Collision is going")
 
-#boxes = []
-circle1 = Circle(WINDOWWIDTH/2-100, WINDOWHEIGHT/2 - 10, 30, 10.0, 1.0, 30.0, 0.0)
-circle2 = Circle(WINDOWWIDTH/2+100, WINDOWHEIGHT/2, 30, 1.0, 1.0, -30.0, 0.0)
-circles = [circle1, circle2]
+earth = Circle(WINDOWWIDTH/2,4*WINDOWHEIGHT,3*WINDOWHEIGHT+40,10000.0, 0.2, 0.0, 0.0)
+circle1 = Circle(WINDOWWIDTH/2 - 100, WINDOWHEIGHT/2 - 10, 30, 5.0, 1.0, 30.0, 0.0)
+circle2 = Circle(WINDOWWIDTH/2 + 100, WINDOWHEIGHT/2, 10, 1.0, 1.0, -30.0, 0.0)
+circle3 = Circle(WINDOWWIDTH/2 - 100, WINDOWHEIGHT/2 - 100, 30, 5.0, 1.0, 20.0, 20.0)
+circle4 = Circle(WINDOWWIDTH/2 + 100, WINDOWHEIGHT/2 - 120, 30, 5.0, 1.0, -20.0, 0.0)
+
+circles = [earth, circle1, circle2, circle3, circle4]
 while True:
 
     SURFACE.fill(BLACK)
@@ -125,19 +114,18 @@ while True:
             sys.exit()
         #if event.type == MOUSEBUTTONUP:
         #    pos = pygame.mouse.get_pos()
-        #    #boxes.append(Box(pos[0], pos[1], 30, 30))
         #    circles.append(Circle(pos[0], pos[1], 30))
     
     #for box in boxes:
     #    box.update()
     for i in range(0, len(circles)):
         for j in range(i + 1, len(circles)):
-            collision(i, j, circles)
+            collisionCircles(i, j, circles)
             #circles[i] collision with circles[j] 
         
-    for circle in circles:
+    for circle in circles[1:]:
         circle.update()
-            
+    pygame.draw.circle(SURFACE, WHITE, (earth.rect.centerx,earth.rect.centery), earth.radius) 
         #if event.type = KEYDOWN:
         #    if event.key = KEY_Q:
         #        pygame.quit()
