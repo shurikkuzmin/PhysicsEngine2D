@@ -14,6 +14,7 @@ pygame.init()
 WINDOWHEIGHT=600
 WINDOWWIDTH=800
 SPEED = 60
+SPEEDGIF = 10
 GRAVITY = 20.0
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -74,6 +75,9 @@ class Circle:
         self.rect.centerx = int(self.centerX)
         pygame.draw.circle(SURFACE, WHITE, (self.rect.centerx,self.rect.centery), self.radius)       
 
+
+    
+
 def collisionCircles(i, j, circles):
     dist = numpy.sqrt((circles[i].centerX - circles[j].centerX)**2 + (circles[i].centerY - circles[j].centerY)**2)
     if dist < circles[i].radius + circles[j].radius:
@@ -105,13 +109,21 @@ circle3 = Circle(WINDOWWIDTH/2 - 100, WINDOWHEIGHT/2 - 100, 30, 5.0, 1.0, 20.0, 
 circle4 = Circle(WINDOWWIDTH/2 + 100, WINDOWHEIGHT/2 - 120, 30, 5.0, 1.0, -20.0, 0.0)
 
 circles = [earth, circle1, circle2, circle3, circle4]
-while True:
+counter = 0
+isGif = False
+if isGif:
+    import os
+    import glob
+    for png in glob.glob("*.png"):
+        os.remove(png)
+
+isRunning = True
+while isRunning:
 
     SURFACE.fill(BLACK)
     for event in pygame.event.get():
         if event.type == QUIT:
-            pygame.quit()
-            sys.exit()
+            isRunning = False
         #if event.type == MOUSEBUTTONUP:
         #    pos = pygame.mouse.get_pos()
         #    circles.append(Circle(pos[0], pos[1], 30))
@@ -130,5 +142,22 @@ while True:
         #    if event.key = KEY_Q:
         #        pygame.quit()
         #        sys.exit()
+    counter = counter + 1
+    if isGif:
+        if counter % (SPEED/SPEEDGIF) == 0:
+            fileName = "image{:05d}".format(counter) + ".png"
+            pygame.image.save(SURFACE, fileName)
     clock.tick(SPEED)       
     pygame.display.update()
+    
+if isGif:
+    import PIL
+    frames = []
+    images = glob.glob("*.png")
+    for image in images:
+        frame = PIL.Image.open(image)
+        frames.append(frame)
+    frames[0].save("animated.gif", format="GIF", append_images=frames[1:], save_all=True, duration=60, loop=0)
+    
+pygame.quit()
+sys.exit()
