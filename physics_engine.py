@@ -13,7 +13,7 @@ pygame.init()
 
 WINDOWHEIGHT=600
 WINDOWWIDTH=800
-SPEED = 60
+SPEED = 100
 SPEEDGIF = 10
 GRAVITY = 20.0
 WHITE = (255, 255, 255)
@@ -108,23 +108,41 @@ def collisionBoxes(i, j, boxes):
     
     if abs(x2 - x1) < 0.5 * (w1 + w2) and abs(y2 - y1) < 0.5 * (h1 + h2):
         print("Colliding")
-        # velX1 = circles[i].velX
-        # velY1 = circles[i].velY
-        # velX2 = circles[j].velX
-        # velY2 = circles[j].velY
-        # m1 = circles[i].mass
-        # m2 = circles[j].mass        
-        # normX = (x1 - x2) / dist
-        # normY = (y1 - y2) / dist
-        # dotProduct = (velX1 - velX2) * normX + (velY1 - velY2) * normY
-        # if dotProduct < 0.0:
-        #     k = min(circles[i].k, circles[j].k)
-        #     impulse = - m1 * m2/(m1 + m2) * (1.0 + k) * dotProduct
-        #     circles[i].velX += impulse * normX / m1
-        #     circles[i].velY += impulse * normY / m1
-        #     circles[j].velX -= impulse * normX / m2
-        #     circles[j].velY -= impulse * normY / m2
-
+        penetrationX = 0.5 * (w1 + w2) - abs(x2 - x1)
+        penetrationY = 0.5 * (h1 + h2) - abs(y2 - y1)
+        
+        normX = 0.0
+        normY = 0.0
+        if penetrationY > penetrationX:
+            # Normal will be parallel to X
+            if x2 > x1:
+                normX = -1.0
+                normY = 0.0
+            else:
+                normX = 1.0
+                normY = 0.0
+        else:
+            # Normal will be parallel to Y
+            if y2 > y1:
+                normX = 0.0
+                normY = -1.0
+            else:
+                normX = 0.0
+                normY = 1.0
+        velX1 = boxes[i].velX
+        velY1 = boxes[i].velY
+        velX2 = boxes[j].velX
+        velY2 = boxes[j].velY
+        m1 = boxes[i].mass
+        m2 = boxes[j].mass        
+        dotProduct = (velX1 - velX2) * normX + (velY1 - velY2) * normY
+        if dotProduct < 0.0:
+             k = min(boxes[i].k, boxes[j].k)
+             impulse = - m1 * m2/(m1 + m2) * (1.0 + k) * dotProduct
+             boxes[i].velX += impulse * normX / m1
+             boxes[i].velY += impulse * normY / m1
+             boxes[j].velX -= impulse * normX / m2
+             boxes[j].velY -= impulse * normY / m2
 
 
 earth = Circle(WINDOWWIDTH/2,4*WINDOWHEIGHT,3*WINDOWHEIGHT+40,10000.0, 0.2, 0.0, 0.0)
@@ -136,7 +154,8 @@ circles = [] #[earth, circle1, circle2, circle3, circle4]
 
 box1 = Box(WINDOWWIDTH/2 - 100, WINDOWHEIGHT/2 - 10, 30, 30, 1.0, 1.0, 30.0, 0.0)
 box2 = Box(WINDOWWIDTH/2 + 100, WINDOWHEIGHT/2, 30, 30, 1.0, 1.0, -30.0, 0.0)
-boxes = [box1, box2]
+box3 = Box(WINDOWWIDTH/2 + 20, WINDOWHEIGHT/2 + 60, 30, 30, 1.0, 1.0, 0.0, -20.0)
+boxes = [box1, box2, box3]
 
 counter = 0
 isGif = False
