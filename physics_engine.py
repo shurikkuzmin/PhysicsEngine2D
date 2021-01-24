@@ -166,7 +166,7 @@ box3 = Box(WINDOWWIDTH/2 + 20, WINDOWHEIGHT/2 - 60, 30, 30, 1.0, 1.0, 0.0, -20.0
 objects = [earth, circle1, circle2, circle3, circle4, box1, box2, box3]
 
 counter = 0
-isGif = True
+isGif = False
 if isGif:
     import os
     import glob
