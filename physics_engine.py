@@ -24,19 +24,16 @@ clock = pygame.time.Clock()
 SURFACE = pygame.display.set_mode((WINDOWWIDTH,WINDOWHEIGHT))
 
 
-class Box:
-    def __init__(self, centerX, centerY, width, height, mass, k, velX, velY):
-        self.rect = pygame.Rect(centerX - width/2, centerY-height/2, width, height)
+class PhysicalObject:
+    def __init__(self, centerX, centerY, mass, k, velX, velY):
         self.velX = velX
         self.velY = velY
-        self.centerX = self.rect.centerx
-        self.centerY = self.rect.centery
+        self.centerX = centerX
+        self.centerY = centerY
         self.mass = mass
         self.k = k
-        self.isActive = True
-
+        
     def update(self):
-   
         self.velY = self.velY + GRAVITY * 1.0 / SPEED
         self.velX = self.velX
         self.centerX = self.centerX + self.velX / SPEED
@@ -44,121 +41,132 @@ class Box:
         
         self.rect.centery = int(self.centerY)
         self.rect.centerx = int(self.centerX)
+        
+        self.draw()
+
+class Box(PhysicalObject): 
+    def __init__(self, centerX, centerY, width, height, mass, k, velX, velY):
+        PhysicalObject.__init__(self, centerX, centerY, mass, k, velX, velY)
+        self.rect = pygame.Rect(centerX - width/2, centerY-height/2, width, height)
+
+    def draw(self):
         pygame.draw.rect(SURFACE, WHITE, self.rect)
 
-class Circle:
+class Circle(PhysicalObject):
     def __init__(self, centerX, centerY, radius, mass, k, velX, velY):
-        self.rect = pygame.Rect(centerX - radius, centerY - radius, 2*radius, 2*radius)
-        self.velX = velX #float(random.randint(-20, 20))
-        self.velY = velY #float(random.randint(-20, 20))
-        self.centerX = self.rect.centerx
-        self.centerY = self.rect.centery
+        PhysicalObject.__init__(self, centerX, centerY, mass, k, velX, velY)
         self.radius = radius
-        self.mass = mass
-        self.k = k 
-        self.isActive = True
+        self.rect = pygame.Rect(centerX - radius, centerY - radius, 2*radius, 2*radius)
 
-    def update(self):
-        
-        self.velY = self.velY + GRAVITY * 1.0 / SPEED
-        self.velX = self.velX
-        self.centerX = self.centerX + self.velX / SPEED
-        self.centerY = self.centerY + self.velY / SPEED
-        
-        self.rect.centery = int(self.centerY)
-        self.rect.centerx = int(self.centerX)
+    def draw(self):
         pygame.draw.circle(SURFACE, WHITE, (self.rect.centerx,self.rect.centery), self.radius)       
 
+class Earth(Circle):
+    def __init__(self, centerX, centerY, radius, mass, k, velX, velY):
+        Circle.__init__(self, centerX, centerY, radius, mass, k, velX, velY)
+ 
+    def update(self):
+        self.velY = 0.0
+        self.velX = 0.0
+        self.draw()
 
+def collision(obj1, obj2):
+    x1 = obj1.centerX
+    y1 = obj1.centerY
+    x2 = obj2.centerX
+    y2 = obj2.centerY
     
+    isCollision = False
+    if isinstance(obj1, Circle) and isinstance(obj2, Circle):
+        dist = numpy.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+        if dist < obj1.radius + obj2.radius:
+            isCollision = True
+            normX = (x1 - x2) / dist
+            normY = (y1 - y2) / dist
+    if (isinstance(obj1, Box) and isinstance(obj2, Box)) or (isinstance(obj1, Circle) and isinstance(obj2, Box)) or (isinstance(obj2, Circle) and isinstance(obj1, Box)):
+        dist = numpy.sqrt((x1 - x2)**2 + (y1 - y2)**2)        
+        w1 = 0
+        h1 = 0
+        w2 = 0
+        h2 = 0
+        if isinstance(obj1, Circle):
+            w1 = abs((x2 - x1) / dist) * obj1.radius
+            h1 = abs((y2 - y1) / dist) * obj1.radius
+            # Shift the center
+            x1 = obj1.centerX + 0.5 * w1 * numpy.sign(x2 - x1)
+            y1 = obj1.centerY + 0.5 * h1 * numpy.sign(y2 - y1)
+            w2 = obj2.rect.width
+            h2 = obj2.rect.height
+        elif isinstance(obj2, Circle):
+            w2 = abs((x2 - x1) / dist) * obj2.radius
+            h2 = abs((y2 - y1) / dist) * obj2.radius
+            x2 = obj2.centerX + 0.5 * w2 * numpy.sign(x1 - x2)
+            y2 = obj2.centerY + 0.5 * h2 * numpy.sign(y1 - y2)
 
-def collisionCircles(i, j, circles):
-    dist = numpy.sqrt((circles[i].centerX - circles[j].centerX)**2 + (circles[i].centerY - circles[j].centerY)**2)
-    if dist < circles[i].radius + circles[j].radius:
-        x1 = circles[i].centerX
-        y1 = circles[i].centerY
-        x2 = circles[j].centerX
-        y2 = circles[j].centerY
-        velX1 = circles[i].velX
-        velY1 = circles[i].velY
-        velX2 = circles[j].velX
-        velY2 = circles[j].velY
-        m1 = circles[i].mass
-        m2 = circles[j].mass        
-        normX = (x1 - x2) / dist
-        normY = (y1 - y2) / dist
-        dotProduct = (velX1 - velX2) * normX + (velY1 - velY2) * normY
-        if dotProduct < 0.0:
-            k = min(circles[i].k, circles[j].k)
-            impulse = - m1 * m2/(m1 + m2) * (1.0 + k) * dotProduct
-            circles[i].velX += impulse * normX / m1
-            circles[i].velY += impulse * normY / m1
-            circles[j].velX -= impulse * normX / m2
-            circles[j].velY -= impulse * normY / m2
-
-def collisionBoxes(i, j, boxes):
-    x1 = boxes[i].centerX
-    y1 = boxes[i].centerY
-    x2 = boxes[j].centerX
-    y2 = boxes[j].centerY
-    w1 = boxes[i].rect.width
-    h1 = boxes[i].rect.height
-    w2 = boxes[j].rect.width
-    h2 = boxes[j].rect.height
-    
-    if abs(x2 - x1) < 0.5 * (w1 + w2) and abs(y2 - y1) < 0.5 * (h1 + h2):
-        print("Colliding")
-        penetrationX = 0.5 * (w1 + w2) - abs(x2 - x1)
-        penetrationY = 0.5 * (h1 + h2) - abs(y2 - y1)
-        
-        normX = 0.0
-        normY = 0.0
-        if penetrationY > penetrationX:
-            # Normal will be parallel to X
-            if x2 > x1:
-                normX = -1.0
-                normY = 0.0
-            else:
-                normX = 1.0
-                normY = 0.0
+            w1 = obj1.rect.width
+            h1 = obj1.rect.height
         else:
-            # Normal will be parallel to Y
-            if y2 > y1:
-                normX = 0.0
-                normY = -1.0
+            w1 = obj1.rect.width
+            h1 = obj1.rect.height
+            w2 = obj2.rect.width
+            h2 = obj2.rect.height
+        if abs(x2 - x1) <= 0.5 * (w1 + w2) and abs(y2 - y1) <= 0.5 * (h1 + h2):
+            isCollision = True
+            penetrationX = 0.5 * (w1 + w2) - abs(x2 - x1)
+            penetrationY = 0.5 * (h1 + h2) - abs(y2 - y1)
+
+            normX = 0.0
+            normY = 0.0
+            if penetrationY > penetrationX:
+                # Normal will be parallel to X
+                if x2 > x1:
+                    normX = -1.0
+                    normY = 0.0
+                else:
+                    normX = 1.0
+                    normY = 0.0
             else:
-                normX = 0.0
-                normY = 1.0
-        velX1 = boxes[i].velX
-        velY1 = boxes[i].velY
-        velX2 = boxes[j].velX
-        velY2 = boxes[j].velY
-        m1 = boxes[i].mass
-        m2 = boxes[j].mass        
+                # Normal will be parallel to Y
+                if y2 > y1:
+                    normX = 0.0
+                    normY = -1.0
+                else:
+                    normX = 0.0
+                    normY = 1.0
+        
+    if isCollision:
+        velX1 = obj1.velX
+        velY1 = obj1.velY
+        velX2 = obj2.velX
+        velY2 = obj2.velY
+      
         dotProduct = (velX1 - velX2) * normX + (velY1 - velY2) * normY
         if dotProduct < 0.0:
-             k = min(boxes[i].k, boxes[j].k)
-             impulse = - m1 * m2/(m1 + m2) * (1.0 + k) * dotProduct
-             boxes[i].velX += impulse * normX / m1
-             boxes[i].velY += impulse * normY / m1
-             boxes[j].velX -= impulse * normX / m2
-             boxes[j].velY -= impulse * normY / m2
+            m1 = obj1.mass
+            m2 = obj2.mass        
+
+            k = min(obj1.k, obj2.k)
+            impulse = - m1 * m2 / (m1 + m2) * (1.0 + k) * dotProduct
+            obj1.velX += impulse * normX / m1
+            obj1.velY += impulse * normY / m1
+            obj2.velX -= impulse * normX / m2
+            obj2.velY -= impulse * normY / m2
 
 
-earth = Circle(WINDOWWIDTH/2,4*WINDOWHEIGHT,3*WINDOWHEIGHT+40,10000.0, 0.2, 0.0, 0.0)
+
+earth = Earth(WINDOWWIDTH/2,4*WINDOWHEIGHT,3*WINDOWHEIGHT+40, 1000.0, 0.2, 0.0, 0.0)
 circle1 = Circle(WINDOWWIDTH/2 - 100, WINDOWHEIGHT/2 - 10, 30, 5.0, 1.0, 30.0, 0.0)
-circle2 = Circle(WINDOWWIDTH/2 + 100, WINDOWHEIGHT/2, 10, 1.0, 1.0, -30.0, 0.0)
+circle2 = Circle(WINDOWWIDTH/2 + 150, WINDOWHEIGHT/2, 10, 1.0, 1.0, -30.0, 0.0)
 circle3 = Circle(WINDOWWIDTH/2 - 100, WINDOWHEIGHT/2 - 100, 30, 5.0, 1.0, 20.0, 20.0)
 circle4 = Circle(WINDOWWIDTH/2 + 100, WINDOWHEIGHT/2 - 120, 30, 5.0, 1.0, -20.0, 0.0)
-circles = [] #[earth, circle1, circle2, circle3, circle4]
-
-box1 = Box(WINDOWWIDTH/2 - 100, WINDOWHEIGHT/2 - 10, 30, 30, 1.0, 1.0, 30.0, 0.0)
+box1 = Box(WINDOWWIDTH/2 - 200, WINDOWHEIGHT/2 - 10, 30, 30, 1.0, 1.0, 30.0, 0.0)
 box2 = Box(WINDOWWIDTH/2 + 100, WINDOWHEIGHT/2, 30, 30, 1.0, 1.0, -30.0, 0.0)
-box3 = Box(WINDOWWIDTH/2 + 20, WINDOWHEIGHT/2 + 60, 30, 30, 1.0, 1.0, 0.0, -20.0)
-boxes = [box1, box2, box3]
+box3 = Box(WINDOWWIDTH/2 + 20, WINDOWHEIGHT/2 - 60, 30, 30, 1.0, 1.0, 0.0, -20.0)
+
+objects = [earth, circle1, circle2, circle3, circle4, box1, box2, box3]
 
 counter = 0
-isGif = False
+isGif = True
 if isGif:
     import os
     import glob
@@ -173,29 +181,20 @@ while isRunning:
         if event.type == QUIT:
             isRunning = False
     
-    for box in boxes:
-        box.update()
-    for i in range(0, len(boxes)):
-        for j in range(i + 1, len(boxes)):
-            collisionBoxes(i, j, boxes)
-
-#    for i in range(0, len(circles)):
-#        for j in range(i + 1, len(circles)):
-#            collisionCircles(i, j, circles)
-            #circles[i] collision with circles[j] 
+    for obj in objects:
+        obj.update()
         
-#    for circle in circles[1:]:
-#        circle.update()
-#    pygame.draw.circle(SURFACE, WHITE, (earth.rect.centerx,earth.rect.centery), earth.radius) 
-        #if event.type = KEYDOWN:
-        #    if event.key = KEY_Q:
-        #        pygame.quit()
-        #        sys.exit()
+    for i in range(0, len(objects)):
+        for j in range(i + 1, len(objects)):
+            collision(objects[i], objects[j])
+
+
     counter = counter + 1
     if isGif:
         if counter % (SPEED/SPEEDGIF) == 0:
             fileName = "image{:05d}".format(counter) + ".png"
             pygame.image.save(SURFACE, fileName)
+
     clock.tick(SPEED)       
     pygame.display.update()
     
